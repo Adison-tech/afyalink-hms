@@ -20,16 +20,16 @@ app.get('/', (req, res) => {
 });
 
 // User authentication routes
-app.use('/api/auth', authRoutes); // All auth routes will be prefixed /api/auth
+app.use('/auth', authRoutes); // All auth routes will be prefixed /auth
 
 // Use patient routes
-app.use('/api/patients', patientRoutes); // All patient routes will be prefixed with /api/patients
+app.use('/patients', patientRoutes); // All patient routes will be prefixed with /patients
 
 // Use appointment routes
-app.use('/api/appointments', appointmentRoutes); // All appointment routes will be prefixes with /api/appointents
+app.use('/appointments', appointmentRoutes); // All appointment routes will be prefixes with /appointents
 
 // Use clinical note routes
-app.use('/api/clinical_notes', clinicalNoteRoutes); 
+app.use('/clinical_notes', clinicalNoteRoutes); 
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

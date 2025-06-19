@@ -73,7 +73,7 @@ exports.loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!isMatch) {
-      return re.status(401).json({ message: 'Invalidentials.' });
+      return res.status(401).json({ message: 'Invalidentials.' });
     }
 
     // Generate JWT token
