@@ -1,0 +1,176 @@
+-------LOGIN-------
+METHOD: POST
+URL: http://localhost:5000/api/auth/login
+HEADERS: Content-Type: application/json
+Body (raw JSON):
+JSON
+
+{
+    "username": "adminuser",
+    "password": "securePassword123"
+}
+
+
+
+-----Register-------
+Method: POST
+URL: http://localhost:5000/api/auth/register
+Headers:
+Content-Type: application/json
+Body (raw JSON):
+JSON
+
+{
+    "username": "adminuser",
+    "password": "securePassword123",
+    "role": "admin"
+}
+
+-------Create---patient------
+Method: POST
+URL: http://localhost:5000/api/patients
+Headers:
+Content-Type: application/json
+Authorization: Bearer <YOUR_JWT_TOKEN>
+Body (raw JSON):
+JSON
+
+{
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "date_of_birth": "1990-05-15",
+    "gender": "Female",
+    "national_id": "12345678",
+    "contact_phone": "0712345678",
+    "email": "jane.doe@example.com",
+    "address": "123 Ngong Road, Nairobi"
+}
+
+
+--------Get----All----Patients----(GET---Request):----
+
+Method: GET
+URL: http://localhost:5000/api/patients
+Headers:
+Authorization: Bearer <YOUR_JWT_TOKEN>
+
+
+----GetPatientbyID(GETRequest):---------
+
+Method: GET
+URL: http://localhost:5000/api/patients/<PATIENT_ID> (Replace <PATIENT_ID> with an ID from your previous "Create Patient" or "Get All Patients" response)
+Headers:
+Authorization: Bearer <YOUR_JWT_TOKEN>
+
+
+
+
+----------UpdatePatient(PUTRequest):----------
+
+Method: PUT
+URL: http://localhost:5000/api/patients/<PATIENT_ID>
+Headers:
+Content-Type: application/json
+Authorization: Bearer <YOUR_JWT_TOKEN>
+Body (raw JSON - update only fields you want to change):
+JSON
+
+{
+    "contact_phone": "0722334455",
+    "address": "456 Karen Plains, Nairobi"
+}
+
+
+
+---------DeletePatient(DELETERequest):----------------
+
+Method: DELETE
+URL: http://localhost:5000/api/patients/<PATIENT_ID>
+Headers:
+Authorization: Bearer <YOUR_JWT_TOKEN>
+
+
+
+--------CreateDoctorUser(ifyoudon'thaveone):--------
+
+Method: POST, URL: http://localhost:5000/api/auth/register
+Body: { "username": "dr.smith", "password": "docpassword", "role": "doctor" }
+Note down the id of this doctor user.
+
+
+
+-----------CreatePatient(ifyoudon'thaveone):----------
+
+Method: POST, URL: http://localhost:5000/api/patients
+Headers: Authorization: Bearer <YOUR_ADMIN/RECEPTIONIST_JWT>
+Body: {"first_name": "Test", "last_name": "Patient", "date_of_birth": "2000-01-01", "gender": "Male", "contact_phone": "0733445566"}
+Note down the id of this patient.
+
+
+
+
+------------CreateAppointment(POSTRequest):----------
+
+Method: POST
+URL: http://localhost:5000/api/appointments
+Headers: Content-Type: application/json, Authorization: Bearer <YOUR_ADMIN/RECEPTIONIST_JWT>
+Body (raw JSON):
+JSON
+
+{
+    "patient_id": <PATIENT_ID_YOU_CREATED>,
+    "doctor_id": <DOCTOR_ID_YOU_CREATED>,
+    "appointment_date": "2025-06-20",  // Use tomorrow's date or a future date
+    "appointment_time": "10:30:00",
+    "reason": "Routine check-up"
+}
+
+
+
+--------Get All Appointments (GET Request):-----
+
+Method: GET
+URL: http://localhost:5000/api/appointments
+Headers: Authorization: Bearer <ANY_VALID_USER_JWT> (admin, doctor, nurse, receptionist)
+
+
+
+-----Get All Appointments (with filters - GET Request):
+
+Method: GET
+URL: http://localhost:5000/api/appointments?doctor_id=<DOCTOR_ID>&date=2025-06-20 (Adjust date as needed)
+Headers: Authorization: Bearer <ANY_VALID_USER_JWT>
+
+
+
+
+
+Get Appointment by ID (GET Request):
+
+Method: GET
+URL: http://localhost:5000/api/appointments/<APPOINTMENT_ID>
+Headers: Authorization: Bearer <ANY_VALID_USER_JWT>
+
+
+
+
+Update Appointment (PUT Request):
+
+Method: PUT
+URL: http://localhost:5000/api/appointments/<APPOINTMENT_ID>
+Headers: Content-Type: application/json, Authorization: Bearer <YOUR_ADMIN/RECEPTIONIST/DOCTOR_JWT>
+Body (raw JSON - e.g., to mark as completed):
+JSON
+
+{
+    "status": "completed",
+    "reason": "Follow-up discussion"
+}
+
+
+
+Delete Appointment (DELETE Request):
+
+Method: DELETE
+URL: http://localhost:5000/api/appointments/<APPOINTMENT_ID>
+Headers: Authorization: Bearer <YOUR_ADMIN_JWT>
