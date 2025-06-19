@@ -174,3 +174,72 @@ Delete Appointment (DELETE Request):
 Method: DELETE
 URL: http://localhost:5000/api/appointments/<APPOINTMENT_ID>
 Headers: Authorization: Bearer <YOUR_ADMIN_JWT>
+
+
+
+
+
+
+Create Clinical Note (POST Request):
+
+Method: POST
+URL: http://localhost:5000/api/clinical_notes
+Headers: Content-Type: application/json, Authorization: Bearer <YOUR_ADMIN/DOCTOR_JWT>
+Body (raw JSON):
+JSON
+
+{
+    "patient_id": <PATIENT_ID_YOU_CREATED>,
+    "visit_date": "2025-06-19",
+    "visit_time": "14:00:00",
+    "chief_complaint": "Persistent cough and fever for 3 days.",
+    "diagnosis": "Acute Bronchitis",
+    "medications_prescribed": "Amoxicillin 500mg (3x daily for 7 days), Paracetamol 500mg (as needed for fever)",
+    "vitals": {
+        "temperature": 38.5,
+        "bp_systolic": 130,
+        "bp_diastolic": 85,
+        "pulse": 90,
+        "spo2": 96
+    },
+    "notes": "Patient presented with dry cough and low-grade fever. Lungs clear on auscultation. Advised rest and fluids."
+}
+
+
+
+Get All Clinical Notes for a Patient (GET Request):
+
+Method: GET
+URL: http://localhost:5000/api/clinical_notes/patient/<PATIENT_ID_YOU_CREATED>
+Headers: Authorization: Bearer <YOUR_ADMIN/DOCTOR/NURSE_JWT>
+
+
+
+
+Get Single Clinical Note by ID (GET Request):
+
+Method: GET
+URL: http://localhost:5000/api/clinical_notes/<CLINICAL_NOTE_ID>
+Headers: Authorization: Bearer <YOUR_ADMIN/DOCTOR/NURSE_JWT>
+
+
+
+Update Clinical Note (PUT Request):
+
+Method: PUT
+URL: http://localhost:5000/api/clinical_notes/<CLINICAL_NOTE_ID>
+Headers: Content-Type: application/json, Authorization: Bearer <YOUR_ADMIN/DOCTOR_WHO_AUTHORED_NOTE_JWT>
+Body (raw JSON - e.g., add more notes or update diagnosis):
+JSON
+
+{
+    "notes": "Patient called for follow-up. Symptoms improving. Continue medication for 3 more days."
+}
+
+
+
+Delete Clinical Note (DELETE Request):
+
+Method: DELETE
+URL: http://localhost:5000/api/clinical_notes/<CLINICAL_NOTE_ID>
+Headers: Authorization: Bearer <YOUR_ADMIN/DOCTOR_WHO_AUTHORED_NOTE_JWT>

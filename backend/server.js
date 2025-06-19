@@ -9,6 +9,7 @@ const pool = require('./src/config/db');
 const authRoutes = require('./src/routes/authRoutes');
 const patientRoutes = require('./src/routes/patientRoutes');
 const appointmentRoutes = require('./src/routes/appointmentRoutes');
+const clinicalNoteRoutes = require('./src/routes/clinicalNoteRoutes');
 
 // Middleware to parse JSON request bodies
 app.use(express.json());
@@ -26,6 +27,9 @@ app.use('/api/patients', patientRoutes); // All patient routes will be prefixed 
 
 // Use appointment routes
 app.use('/api/appointments', appointmentRoutes); // All appointment routes will be prefixes with /api/appointents
+
+// Use clinical note routes
+app.use('/api/clinical_notes', clinicalNoteRoutes); 
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
