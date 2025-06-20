@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { jwtDecode } from 'jwt-decode'; // <--- ADD THIS IMPORT
 
 const AuthContext = createContext(null);
 
@@ -14,16 +15,28 @@ export const AuthProvider = ({ children }) => {
 
     if (storedToken && storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
-        setToken(storedToken);
+        const parsedUser = JSON.parse(storedUser); // Parse user data first
+        const decodedToken = jwtDecode(storedToken); // <--- DECODE THE TOKEN
+
+        // Check if token is expired (exp is in seconds, Date.now() is in milliseconds)
+        if (decodedToken.exp * 1000 < Date.now()) { // <--- ADD EXPIRY CHECK
+          console.warn('AuthContext: Stored token is EXPIRED. Clearing session.');
+          logout(); // Clear invalid data if token is expired
+        } else {
+          setUser(parsedUser); // Set user only if token is valid
+          setToken(storedToken); // Set token only if token is valid
+          console.log('AuthContext: Token found and VALID. Authenticated.');
+        }
 
       } catch (error) {
-        console.error('Failed to parse stored user or token:', error);
-        logout(); // Clear invalid data
+        console.error('AuthContext: Failed to parse or decode stored data/token:', error);
+        logout(); // Clear invalid data if parsing/decoding fails
       }
+    } else {
+        console.log('AuthContext: No token or user found in localStorage.');
     }
-    setLoading(false); // Finished loading
-  }, []);
+    setLoading(false); // Finished loading regardless of token presence/validity
+  }, []); // Empty dependency array means this runs only once on mount
 
   const login = (userData, jwtToken) => {
     setUser(userData);
@@ -37,6 +50,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    console.log('AuthContext: User logged out. Local storage cleared.'); // Optional: added log
   };
 
   // Provide auth state and functions to children components

@@ -34,7 +34,7 @@ exports.registerUser = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '8h' }
     );
 
     res.status(201).json({
@@ -73,14 +73,14 @@ exports.loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalidentials.' });
+      return res.status(401).json({ message: 'Invalid crentials.' });
     }
 
     // Generate JWT token
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '8h' }
     );
     res.status(200).json({
       message: 'Login successful',

@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 function PatientsPage() {
-  const { token, isAuthenticated, user } = useAuth();
+  const { token, isAuthenticated, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,23 +25,35 @@ function PatientsPage() {
 
   // Fetch patients when component mounts or token changes
   useEffect(() => {
-    if (!isAuthenticated) {
+    console.log('PatientsPage useEffect - isAuthenticated:', isAuthenticated);
+    console.log('PatientsPage useEffect - token:', token);
+    console.log('PatientsPage useEffect - authLoading:', authLoading);
+
+    // Only attempt to fetch if authcontext has finished loading and user is authenticated and token is present
+    if (isAuthenticated && token) {
+      console.log('PatientsPage useEffect: Auth context loaded, user authenticated. Fetching patients.');
+      fetchPatients();
+    } else {
+      //    If not authenticated (and authLoading is false), navigate to login.
+      console.log('PatientsPage useEffect: Auth context loaded, user NOT authenticated. Navigating to login.');
       navigate('/login');
-      return;
     }
-    fetchPatients();
-  }, [isAuthenticated, token, navigate]);
+  }, [isAuthenticated, token, authLoading, navigate]);
 
   const fetchPatients = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('/patients', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const headersToSend = { // <--- ADD THIS BLOCK
+        'Authorization': `Bearer ${token}`
+      };
+      console.log('Sending headers:', headersToSend); // <--- ADD 
+
+      const response = await fetch('/api/patients', {
+        headers: headersToSend // <--- USE THE headersToSend VARIABLE HERE
       });
+
       if (!response.ok) {
         const errData = await response.json();
         throw new Error(errData.message || 'Failed to fetch patients.');
@@ -71,7 +83,7 @@ function PatientsPage() {
     }
 
     try {
-      const url = editingPatient ? `/patients/${editingPatient.id}` : '/patients';
+      const url = editingPatient ? `/api/patients/${editingPatient.id}` : '/api/patients';
       const method = editingPatient ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -110,10 +122,10 @@ function PatientsPage() {
     setError(null);
 
     try {
-      const response = await fetch(`/patients/${patientId}`, {
+      const response = await fetch(`/api/patients/${patientId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer #{token}`
+          'Authorization': `Bearer ${token}`
         }
       });
       if (!response.ok) {
@@ -151,14 +163,15 @@ function PatientsPage() {
   const canManagePatients = user && (user.role === 'admin' || user.role === 'receptionist');
   // Check if logged in user has permission to view clinical notes
   const canViewClinicalNotes = user && (user.role === 'admin' || user.role === 'doctor' || user.role === 'nurse');
-
-  if (loading) return <div>Loading patients...</div>;
-  if (error) return <div style={{ color: 'red' }}>Error: {error}</div>;
-  if (!isAuthenticated) return <div>Redirecting to login...</div>;
+  
+  if (authLoading) return <div className='p-6 text-center text-lg'>Loading authentication...</div>
+  if (loading) return <div className='p-6 text-center text-lg'>Loading patients...</div>;
+  if (error) return <div className='p-6 text-center text-lg text-red-600'>Error: {error}</div>;
+  if (!isAuthenticated) return <div className='p-6 text-center text-lg'>Redirecting to login...</div>;
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h2>Patient Management</h2>
+    <div className='p-6 bg-gray-50 min-h-[calc(100vh-64px)]'>
+      <h2 className='text-3xl font-bold text-gray-800 mb-6 border-b pb-2'>Patient Management</h2>
 
       {canManagePatients && (
         <button onClick={() => {
@@ -168,92 +181,182 @@ function PatientsPage() {
             first_name: '', last_name: '', date_of_birth: '', gender: '',
             national_id: '', contact_phone: '', email: '', address: ''
           });
-        }}>
+        }}
+        className='bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg shadow transition duration-300 mb-6'>
           {showAddPatientForm ? 'Cancel' : 'Add New Patient'}
         </button>
       )}
 
       {showAddPatientForm && (
-        <div style={{ border: '1px solid #ccc', padding: '15px', marginTop: '20px', borderRadius: '8px' }}>
-          <h3>{editingPatient ? 'Edit Patient' : 'Add New Patient'}</h3>
-          <form onSubmit={handleAddSubmit}>
-            <div style={{ marginBottom: '10px' }}>
-              <label>First Name: <input type='text' name='first_name' value={formData.first_name} onChange={handleChange} required /></label>
+        <div className='bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200'>
+          <h3 className='text-2xl font-semibold text-gray-700 mb-4'>{editingPatient ? 'Edit Patient' : 'Add New Patient'}</h3>
+          <form onSubmit={handleAddSubmit} className='grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4'>
+            <div>
+              <label htmlFor='firstname' className='block text-gray-700 text-sm font-medium mb-1'>First Name:</label>
+              <input 
+                type='text'
+                id='firstname'
+                name='first_name'
+                value={formData.first_name}
+                onChange={handleChange}
+                required
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+              />
             </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label>Last Name: <input type='text' name='last_name' value={formData.last_name} onChange={handleChange} required /></label>
+            <div>
+              <label htmlFor='lastname' className='block text-gray-700 text-sm font-medium mb-1'>Last Name:</label>
+              <input
+                type='text'
+                id='lastname'
+                name='last_name'
+                value={formData.last_name}
+                onChange={handleChange}
+                required
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+              />
             </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label>Date of Birth: <input type='date' name='date_of_birth' value={formData.date_of_birth} onChange={handleChange} required /></label>
+            <div>
+              <label htmlFor='dob' className='block text-gray-700 text-sm font-medium mb-1'>Date of Birth:</label>
+              <input
+                type='date' 
+                id='dob'
+                name='date_of_birth'
+                value={formData.date_of_birth}
+                onChange={handleChange}
+                required
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+              />
             </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label>Gender:
-                <select name='gender' value={formData.gender} onChange={handleChange} required>
+            <div>
+              <label htmlFor='gender' className='block text-gray-700 text-sm font-medium mb-1'>Gender:</label>
+                <select
+                  id='gender'
+                  name='gender'
+                  value={formData.gender}
+                  onChange={handleChange}
+                  required
+                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white'
+                >
                   <option value="">Select Gender</option>
                   <option value='Male'>Male</option>
                   <option value='Female'>Female</option>
                   <option value='Other'>Other</option>
                 </select>
-              </label>
             </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label>National ID: <input type='text' name='national_id' value={formData.national_id} onChange={handleChange} /></label>
+            <div>
+              <label htmlFor='nationalId' className='block text-gray-700 text-sm font-medium mb-1'>National ID:</label>
+              <input
+                type='text'
+                id='nationalId'
+                name='national_id'
+                value={formData.national_id}
+                onChange={handleChange}
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+              />
             </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label>Contact Phone: <input type='text' name='contact_phone' value={formData.contact_phone} onChange={handleChange} required /></label>
+            <div>
+              <label htmlFor='contactPhone' className='block text-gray-700 text-sm font-medium mb-1'>Contact Phone:</label>
+              <input
+                id='contactPhone'
+                type='text'
+                name='contact_phone'
+                value={formData.contact_phone}
+                onChange={handleChange}
+                required
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'/
+              >
             </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label>Email: <input type='email' name='email' value={formData.email} onChange={handleChange} /></label>
+            <div>
+              <label htmlFor='email' className='block text-gray-700 text-sm font-medium mb-1'>Email:</label>
+              <input
+                type='email'
+                id='email'
+                name='email'
+                value={formData.email}
+                onChange={handleChange}
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+              />
             </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label>Address: <textarea name='address' value={formData.address} onChange={handleChange}></textarea></label>
+            <div className='col-span-1 md:col-span-2'>
+              <label htmlFor='adddress' className='block text-gray-700 text-sm font-medium mb-1'>Address:</label>
+              <textarea
+                id='address'
+                name='address'
+                value={formData.address}
+                onChange={handleChange}
+                rows='3'
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+              ></textarea>
             </div>
-            <button type='submit'>{editingPatient ? 'Update Patient' : 'Add Patient'}</button>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+            <div className='col-span-1 md:col-span-2 flex justify-end items-center gap-4 mt-4'>
+              <button
+                type='submit'
+                className='bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition duration-300'
+              >
+                {editingPatient ? 'Update Patient' : 'Add Patient'}
+              </button>
+              {error && <p className='text-red-600 text-sm ml-4'>{error}</p>}
+            </div>
           </form>
         </div>
       )}
 
-      <h3 style={{ marginTop: '30px' }}>Current Patients</h3>
+      <h3 className='text-2xl font-semibold text-gray-700 mb-4 mt-8 border-b pb-2'>Current Patients</h3>
       {patients.length === 0 ? (
-        <p>No patients registered yet.</p>
+        <p className='text-gray-600'>No patients registered yet.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
-          <thead>
-            <tr style={{ background: '#f2f2f2' }}>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>ID</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Name</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>DOB</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Gender</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>National ID</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Phones</th>
-              <th style={{ border: '1px solid #ddd', padding: '8px' }}>Actions</th>
+        <div className='overflow-x-auto rounded-lg shadow-md border border-gray-200'>
+          <table className='min-w-full divide-y divide-gray-200 bg-white'>
+          <thead className='bg-gray-50'>
+            <tr>
+              <th scope='col'className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DOB</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">National ID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phones</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className='bg-white divide-y divide-gray-200'>
             {patients.map(patient => (
-              <tr key={patient.id}>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{patient.id}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{patient.first_name} {patient.last_name}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{patient.date_of_birth.split('T')[0]}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{patient.gender}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{patient.national_id}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{patient.contact_phone}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+              <tr key={patient.id} className='hover:bg-gray-50'>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{patient.id}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{patient.first_name} {patient.last_name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{patient.date_of_birth.split('T')[0]}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{patient.gender}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{patient.national_id}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{patient.contact_phone}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2">
                   {canManagePatients && (
                     <>
-                    <button onClick={() => handleEditClick(patient)} style={{ marginRight: '5px', background: '#4CAF50', colo: 'white', border: 'none', padding: '8px 12px', cursor: 'pointer', borderRadius: '4px' }}>Edit</button>
-                    <button onClick={() => handleDeletePatient(patient.id)} style={{ background: '#f44336', color: 'white', border: 'none', padding: '8px 12px', cursor: 'pointer', borderRadius: '4px' }}>Delete</button>
+                    <button
+                      onClick={() => handleEditClick(patient)}
+                      className='text-indigo-600 hover:text-indigo-900 px-3 py-1 border border-indigo-600 rounded-md hover:bg-indigo-50 transition duration-300'
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeletePatient(patient.id)} className='text-red-600 hover:text-red-900 px-3 py-1 border border-red-600 rounded-md hover:bg-red-50 transition duration-300'
+                    >
+                      Delete
+                    </button>
                     </>
                   )}
                   {canViewClinicalNotes && (
-                    <button onClick={() => navigate(`/patients/${patient.id}/notes`)} style={{ marginLeft: '5px', background: '#008CBA', color: 'white', border: 'none', padding: '8px 12px', cursor: 'pointer', borderRadius: '4px' }}>View Notes</button>
+                    <button
+                      onClick={() => navigate(`/patients/${patient.id}/notes`)}
+                      className='text-blue-600 hover:text-blue-900 px-3 py-1 border border-blue-600 rounded-md hover:bg-blue-50 transition duration-300'
+                      >
+                        View Notes
+                      </button>
                   )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
