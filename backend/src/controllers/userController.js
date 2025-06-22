@@ -98,7 +98,7 @@ exports.getProfile = async (req, res) => {
     // The `req.user` object is populated by the authMiddleware
     try {
         const user = await pool.query(
-            'SELECT id, username, role, created_at FROM users WHERE id = $1',
+            'SELECT id, username, first_name, last_name, email, phone_number, address, date_of_birth, gender, created_at, updated_at, role FROM users WHERE id = $1',
             [req.user.id]
         );
         if (!user.rows[0]) {
@@ -108,5 +108,29 @@ exports.getProfile = async (req, res) => {
     } catch (error) {
         console.error('Error fetching user profile:', error);
         res.status(500).json({ message: 'Server error fetching profile.' });
+    }
+};
+
+// --- NEW FUNCTION: Get all users (with optional role filter) ---
+exports.getAllUsers = async (req, res) => {
+    const { role } = req.query; // Extract the 'role' query parameter
+
+    let query = 'SELECT id, username, first_name, last_name, email, role FROM users';
+    const params = []; // Array to hold parameters for the SQL query
+    let whereClause = '';
+
+    if (role) {
+        whereClause = ' WHERE role = $1';
+        params.push(role); // Add the role to the parameters array
+    }
+
+    query += whereClause + ' ORDER BY first_name, last_name'; // Optional: order the results
+
+    try {
+        const result = await pool.query(query, params);
+        res.status(200).json(result.rows); // Send the fetched users as JSON response
+    } catch (error) {
+        console.error('Error fetching users:', error.stack);
+        res.status(500).json({ message: 'Server error when fetching users.' });
     }
 };

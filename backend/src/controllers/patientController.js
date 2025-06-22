@@ -1,3 +1,5 @@
+// backend/src/controllers/patientController.js
+
 const pool = require('../config/db');
 
 // --- Create new patient ---
@@ -56,6 +58,10 @@ exports.getPatientById = async (req, res) => {
     res.status(200).json(patient.rows[0]);
   } catch (error) {
     console.error('Error fetching patient by ID:', error.stack);
+    // Add specific error handling for invalid ID format if necessary (e.g. if id is not a number)
+    if (error.code === '22P02') { // invalid text representation
+        return res.status(400).json({ message: 'Invalid patient ID format.' });
+    }
     res.status(500).json({ message: 'Server error when fetching patient by ID' });
   }
 };
@@ -74,7 +80,7 @@ exports.updatePatient = async (req, res) => {
         return res.status(409).json({ message: 'Another patient with this National ID already exists' });
       }
     }
-    const updatePatient = await pool.query(`UPDATE patients SET
+    const updatedPatient = await pool.query(`UPDATE patients SET
       first_name = COALESCE($1, first_name),
       last_name = COALESCE($2, last_name),
       date_of_birth = COALESCE($3, date_of_birth),
@@ -85,8 +91,22 @@ exports.updatePatient = async (req, res) => {
       address = COALESCE($8, address),
       updated_at = CURRENT_TIMESTAMP 
       WHERE id = $9 RETURNING *`, [first_name, last_name, date_of_birth, gender, national_id, contact_phone, email, address, id]);
+
+    if (updatedPatient.rows.length === 0) {
+        return res.status(404).json({ message: 'Patient not found after update attempt.' });
+    }
+    res.status(200).json({ // ADDED THIS LINE
+      message: 'Patient updated successfully.',
+      patient: updatedPatient.rows[0]
+    });
+
   } catch (error) {
     console.error('Error updating patient:', error.stack);
+    if (error.code === '23505') { // Unique violation, though handled above manually
+        return res.status(409).json({ message: 'This National ID is already associated with another patient.' });
+    } else if (error.code === '22P02') { // Invalid text representation
+        return res.status(400).json({ message: 'Invalid data format provided.' });
+    }
     res.status(500).json({ message: 'Server error when updating patient.' });
   }
 };

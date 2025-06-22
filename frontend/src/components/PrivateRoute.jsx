@@ -1,15 +1,56 @@
+// frontend/src/components/PrivateRoute.jsx
+
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const PrivateRoute = () => {
-  const { isAuthenticated, loading } = useAuth();
+const PrivateRoute = ({ allowedRoles }) => {
+  const { isAuthenticated, loading, user } = useAuth();
+
+  // --- IMPORTANT: CONSOLE LOGS FOR DEBUGGING ---
+  console.log('--- PrivateRoute (Outlet) Render Cycle ---');
+  console.log('PrivateRoute: isAuthenticated =', isAuthenticated);
+  console.log('PrivateRoute: loading =', loading);
+  console.log('PrivateRoute: user =', user);
+  if (user) {
+    console.log('PrivateRoute: user role =', user.role);
+    console.log('PrivateRoute: allowedRoles =', allowedRoles);
+    console.log('PrivateRoute: role check result =', allowedRoles && user.role && allowedRoles.includes(user.role));
+  }
+  console.log('-------------------------------------------');
+  // --- END CONSOLE LOGS ---
 
   if (loading) {
-    return <div>Loading...</div>
+    return (
+      <div className='flex justify-center items-center h-screen bg-gray-100'>
+        <div className='text-xl text-gray-700'>Checking authentication...</div>
+      </div>
+    );
   }
 
-return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    console.warn('PrivateRoute: Not authenticated. Redirecting to login.');
+    return <Navigate to="/login" replace />;
+  }
+
+  // If authenticated but user object not fully loaded or role not available yet
+  if (!user || !user.role) {
+    console.warn('PrivateRoute: Authenticated, but user object or role not yet available. Waiting for user data...');
+    return (
+      <div className='flex justify-center items-center h-screen bg-gray-100'>
+        <div className='text-xl text-gray-700'>Loading user profile...</div>
+      </div>
+    );
+  }
+
+  // Check if the user's role is allowed for this protected section
+  if (allowedRoles && user.role && !allowedRoles.includes(user.role)) {
+    console.warn(`Access Denied: User role '${user.role}' not allowed for this route. Redirecting to dashboard.`);
+    return <Navigate to="/dashboard" replace />; // Redirect to dashboard or a specific "access denied" page
+  }
+
+  // If authenticated and authorized, render the nested route
+  return <Outlet />;
 };
 
 export default PrivateRoute;

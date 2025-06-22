@@ -3,7 +3,7 @@ const pool = require('../config/db');
 // ---Create new clinical note ---
 exports.createClinicalNote = async (req, res) => {
   const doctor_id = req.user.id; // Must be logged in docter
-  const { patient_id, visit_date, visit_time, chief_complaint, diagnosis, medications_prescribed, vitals, notes } = req.body;
+  const { patient_id, visit_datetime, chief_complaint, diagnosis, medications_prescribed, vitals, notes } = req.body;
 
   if (!patient_id || !chief_complaint) {
     return res.status(400).json({ message: 'Missing required fields: patient ID, chief complaint.' });
@@ -20,7 +20,7 @@ exports.createClinicalNote = async (req, res) => {
       return res.status(403).json({ message: 'Only doctors or administrators can create clinical notes.' });
     }
     const newNote = await pool.query(
-      `INSERT INTO clinical_notes (patient_id, doctor_id, visit_date, visit_time, chief_complaint, diagnosis, medications_prescribed, vitals, notes) VALUES ($1, $2, COALESCE($3, CURRENT_DATE), COALESCE($4, CURRENT_TIME), $5, $6, $7, $8, $9) RETURNING *`, [patient_id, doctor_id, visit_date, visit_time, chief_complaint, diagnosis, medications_prescribed, vitals, notes]
+      `INSERT INTO clinical_notes (patient_id, doctor_id, visit_datetime, chief_complaint, diagnosis, medications_prescribed, vitals, notes) VALUES ($1, $2, COALESCE($3, CURRENT_TIMESTAMP), $4, $5, $6, $7, $8) RETURNING *`, [patient_id, doctor_id, visit_datetime, chief_complaint, diagnosis, medications_prescribed, vitals, notes]
     );
     res.status(201).json({
       message: 'Clinical note created successfully.',
@@ -44,8 +44,7 @@ exports.getClinicalNotesByPatient = async (req, res) => {
     const notes = await pool.query(
       `SELECT
         cn.id,
-        cn.visit_date,
-        cn.visit_time,
+        cn.visit_datetime,
         cn.chief_complaint,
         cn.diagnosis,
         cn.medications_prescribed,
@@ -59,7 +58,7 @@ exports.getClinicalNotesByPatient = async (req, res) => {
       FROM clinical_notes cn
       JOIN users u ON cn.doctor_id = u.id
       WHERE cn.patient_id = $1
-      ORDER BY cn.visit_date DESC, cn.visit_time DESC`, [patientId]
+      ORDER BY cn.visit_datetime DESC`, [patientId]
     );
     res.status(200).json(notes.rows);
 
@@ -79,8 +78,7 @@ exports.getClinicalNoteById = async (req, res) => {
         cn.id,
         cn.patient_id,
         cn.doctor_id,
-        cn.visit_date,
-        cn.visit_time,
+        cn.visit_datetime,
         cn.chief_complaint,
         cn.diagnosis,
         cn.medications_prescribed,
