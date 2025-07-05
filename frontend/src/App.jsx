@@ -11,6 +11,7 @@ import ClinicalNotesPage from './pages/ClinicalNotesPage';
 import PrivateRoute from './components/PrivateRoute';
 import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
+import RegisterPage from './pages/RegisterPage'; // Import the new RegisterPage
 
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
@@ -38,6 +39,10 @@ function AppContent() {
           <Route
             path="/login"
             element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+          />
+          <Route
+            path="/register" // Add the route for the RegisterPage
+            element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />}
           />
           <Route
             path="/"

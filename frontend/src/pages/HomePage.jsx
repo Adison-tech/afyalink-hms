@@ -1,19 +1,15 @@
-// frontend/src/HomePage.jsx
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { useAuth } from '../context/AuthContext'; // Assuming useAuth is still desired for conditional elements
+import { useAuth } from '../context/AuthContext';
 
-// Import your local images (ensure these paths are correct)
 import patientDataImage from '../assets/patientdata.webp';
 import dataSecurityImage from '../assets/data-security.webp';
 import auditTrailsImage from '../assets/audit-trails.webp';
 import appointmentSchedulingImage from '../assets/appointment -scheduling.webp';
 import billingInvoicingImage from '../assets/billing-&-invoicing.webp';
 import digitalPatientRecordsImage from '../assets/digital-patient-records.webp';
-
-// Ensure your custom footer styles are imported
+import afyalinkLogo from '../assets/afyalink-logo.svg';
 import '/src/footer.css';
 
 // --- Animation Variants ---
@@ -61,10 +57,10 @@ const sectionVariants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.7, // Increased duration for smoother entry
+      duration: 0.7,
       ease: "easeOut",
-      when: "beforeChildren", // Animate container before children
-      staggerChildren: 0.2, // Stagger children animations
+      when: "beforeChildren",
+      staggerChildren: 0.2,
     },
   },
 };
@@ -108,11 +104,13 @@ const iconCircleVariants = {
   },
 };
 
-// --- End Animation Variants ---
 
 function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // State for mobile menu
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Refs for scrolling to sections
   const featuresRef = useRef(null);
@@ -131,6 +129,11 @@ function HomePage() {
 
   const scrollToSection = (ref) => {
     ref.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // toggle mobile menu
+  const toggleMobileMenu = () => {
+      setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   // State to manage sticky navbar
@@ -155,34 +158,42 @@ function HomePage() {
         {/* Sticky Navbar */}
         <nav
           ref={navRef}
-          className={`w-full py-4 z-50 transition-all duration-300 ${
+          className={`w-full py-2 sm:py-0 z-50 transition-all duration-300 ${
             isSticky ? 'fixed top-0 bg-white shadow-lg' : 'relative bg-white shadow-md'
           }`}
         >
-          <div className="max-w-6xl mx-auto px-4 flex justify-between items-center">
-            <Link to="/" className="text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors">
-              AfyaLink HMS
-            </Link>
-            <div className="flex space-x-6">
-              <button
-                onClick={() => scrollToSection(featuresRef)}
-                className="text-gray-600 hover:text-blue-600 transition-colors duration-300 font-medium px-3 py-2 rounded-md"
-              >
-                Features
-              </button>
-              <button
-                onClick={() => scrollToSection(contactRef)}
-                className="text-gray-600 hover:text-blue-600 transition-colors duration-300 font-medium px-3 py-2 rounded-md"
-              >
-                Contact Us
-              </button>
-              <Link to="/login" className="text-gray-600 hover:text-blue-600 transition-colors duration-300 font-medium px-3 py-2 rounded-md">
-                Login
+          <div className="px-4 sm:px-6 lg:px-8 flex flex-wrap justify-between items-center">
+            {/* Logo and Mobile Menu Button Container */}
+            <div className="flex items-center justify-between w-full sm:w-auto">
+              {/* Logo */}
+              <Link to="/" className="flex items-center">
+                  <img src={afyalinkLogo} alt="AfyaLink HMS Logo" className="h-20 sm:h-24 w-auto" />
               </Link>
+              {/* Mobile Menu Button */}
+              <button
+                onClick={toggleMobileMenu}
+                className="sm:hidden text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md p-2"
+                aria-label="Toggle navigation menu"
+              >
+                {isMobileMenuOpen ? (
+                  // Close Icon (X)
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                ) : (
+                  // Hamburger Icon
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                )}
+              </button>
+            </div>
+
+            {/* Navigation Links - Conditional Visibility */}
+            <div
+              className={`${isMobileMenuOpen ? 'flex' : 'hidden'} sm:flex flex-col sm:flex-row sm:space-x-6 space-y-2 sm:space-y-0 w-full sm:w-auto mt-4 sm:mt-0 py-2 sm:py-0 bg-white sm:bg-transparent shadow-md sm:shadow-none rounded-b-lg`}
+            >
+              <button onClick={() => { scrollToSection(featuresRef); setIsMobileMenuOpen(false); }} className="text-gray-600 hover:text-blue-600 transition-colors duration-300 font-medium px-2 py-2 sm:px-3 sm:py-2 rounded-md text-sm sm:text-base w-full text-center">Features</button>
+              <button onClick={() => { scrollToSection(contactRef); setIsMobileMenuOpen(false); }} className="text-gray-600 hover:text-blue-600 transition-colors duration-300 font-medium px-2 py-2 sm:px-3 sm:py-2 rounded-md text-sm sm:text-base w-full text-center">Contact Us</button>
+              <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-600 hover:text-blue-600 transition-colors duration-300 font-medium px-2 py-2 sm:px-3 sm:py-2 rounded-md text-sm sm:text-base w-full text-center">Login</Link>
               {user && (
-                 <Link to="/dashboard" className="text-gray-600 hover:text-blue-600 transition-colors duration-300 font-medium px-3 py-2 rounded-md">
-                   Dashboard
-                 </Link>
+                 <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-600 hover:text-blue-600 transition-colors duration-300 font-medium px-2 py-2 sm:px-3 sm:py-2 rounded-md text-sm sm:text-base w-full text-center">Dashboard</Link>
               )}
             </div>
           </div>
@@ -232,23 +243,23 @@ function HomePage() {
             </motion.svg>
           </motion.div>
 
-          <div className="relative z-10 max-w-4xl mx-auto text-center px-4 py-16"> {/* Added vertical padding for content */}
+          <div className="relative z-10 max-w-4xl mx-auto text-center px-4 py-16 sm:py-20 md:py-24"> {/* Adjusted vertical padding */}
             <motion.h1
-              className="text-4xl md:text-6xl font-extrabold leading-tight text-gray-900 mb-4"
+              className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight text-gray-900 mb-4" // Adjusted font sizes
               variants={heroTextVariants}
             >
               Revolutionize Healthcare with
               <span className="text-blue-600 block md:inline-block"> AfyaLink HMS</span>
             </motion.h1>
             <motion.p
-              className="text-lg md:text-xl text-gray-700 mb-10 max-w-2xl mx-auto leading-relaxed"
+              className="text-lg sm:text-xl text-gray-700 mb-10 max-w-2xl mx-auto leading-relaxed px-2" // Added horizontal padding for small screens
               variants={heroTextVariants}
             >
               A cutting-edge Hospital Management System designed to streamline operations, enhance patient care, and ensure robust data security for modern healthcare facilities.
             </motion.p>
             <motion.button
               onClick={handleGetStartedClick}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-10 rounded-lg shadow-xl transform transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-75 relative overflow-hidden group"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 sm:px-10 rounded-lg shadow-xl transform transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-75 relative overflow-hidden group w-full sm:w-auto" // Full width on small, auto on larger
               variants={heroTextVariants}
               whileHover={{ scale: 1.07 }}
               whileTap={{ scale: 0.95 }}
@@ -267,28 +278,28 @@ function HomePage() {
           whileInView="visible"
           viewport={{ once: true, amount: 0.3 }}
         >
-          <div className="max-w-6xl mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center"> {/* Added more responsive padding */}
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-12 sm:mb-16"> {/* Adjusted margin-bottom */}
               Why Choose AfyaLink HMS?
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10"> {/* Adjusted gap for different screen sizes */}
               {/* Card 1: Efficiency */}
               <motion.div
                 variants={cardVariants}
-                className="flex flex-col items-center p-8 bg-white rounded-xl shadow-lg border-b-4 border-teal-500 hover:shadow-xl transition-shadow duration-300"
+                className="flex flex-col items-center p-6 sm:p-8 bg-white rounded-xl shadow-lg border-b-4 border-teal-500 hover:shadow-xl transition-shadow duration-300" // Adjusted padding
               >
                 <motion.div
-                  className="bg-teal-100 text-teal-600 p-5 rounded-full mb-6 shadow-md"
+                  className="bg-teal-100 text-teal-600 p-4 sm:p-5 rounded-full mb-4 sm:mb-6 shadow-md" // Adjusted padding
                   variants={iconCircleVariants}
                   initial="hidden"
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.6 }}
                 >
                   {/* Placeholder icon: Replace with actual SVG or component */}
-                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                  <svg className="w-10 h-10 sm:w-12 sm:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </motion.div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Unmatched Efficiency</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">Unmatched Efficiency</h3>
+                <p className="text-base sm:text-lg text-gray-700 leading-relaxed">
                   Streamline workflows, reduce administrative burden, and optimize resource allocation across all departments for peak performance.
                 </p>
               </motion.div>
@@ -296,20 +307,20 @@ function HomePage() {
               {/* Card 2: Reliability */}
               <motion.div
                 variants={cardVariants}
-                className="flex flex-col items-center p-8 bg-white rounded-xl shadow-lg border-b-4 border-orange-500 hover:shadow-xl transition-shadow duration-300"
+                className="flex flex-col items-center p-6 sm:p-8 bg-white rounded-xl shadow-lg border-b-4 border-orange-500 hover:shadow-xl transition-shadow duration-300"
               >
                 <motion.div
-                  className="bg-orange-100 text-orange-600 p-5 rounded-full mb-6 shadow-md"
+                  className="bg-orange-100 text-orange-600 p-4 sm:p-5 rounded-full mb-4 sm:mb-6 shadow-md"
                   variants={iconCircleVariants}
                   initial="hidden"
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.6 }}
                 >
                   {/* Placeholder icon: Replace with actual SVG or component */}
-                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.001 12.001 0 002.944 12c-.047.794.032 1.583.238 2.362a11.968 11.968 0 003.04 8.618 12.001 12.001 0 0017.034-17.034z"></path></svg>
+                  <svg className="w-10 h-10 sm:w-12 sm:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.001 12.001 0 002.944 12c-.047.794.032 1.583.238 2.362a11.968 11.968 0 003.04 8.618 12.001 12.001 0 0017.034-17.034z"></path></svg>
                 </motion.div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Unwavering Reliability</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">Unwavering Reliability</h3>
+                <p className="text-base sm:text-lg text-gray-700 leading-relaxed">
                   Experience consistent, high-performance operation with near 100% uptime, ensuring your critical services are always available.
                 </p>
               </motion.div>
@@ -317,20 +328,20 @@ function HomePage() {
               {/* Card 3: Security */}
               <motion.div
                 variants={cardVariants}
-                className="flex flex-col items-center p-8 bg-white rounded-xl shadow-lg border-b-4 border-blue-500 hover:shadow-xl transition-shadow duration-300"
+                className="flex flex-col items-center p-6 sm:p-8 bg-white rounded-xl shadow-lg border-b-4 border-blue-500 hover:shadow-xl transition-shadow duration-300"
               >
                 <motion.div
-                  className="bg-blue-100 text-blue-600 p-5 rounded-full mb-6 shadow-md"
+                  className="bg-blue-100 text-blue-600 p-4 sm:p-5 rounded-full mb-4 sm:mb-6 shadow-md"
                   variants={iconCircleVariants}
                   initial="hidden"
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.6 }}
                 >
                   {/* Placeholder icon: Replace with actual SVG or component */}
-                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                  <svg className="w-10 h-10 sm:w-12 sm:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                 </motion.div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Top-tier Security</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">Top-tier Security</h3>
+                <p className="text-base sm:text-lg text-gray-700 leading-relaxed">
                   Safeguard sensitive patient data with state-of-the-art encryption, multi-factor authentication, and robust security protocols.
                 </p>
               </motion.div>
@@ -347,12 +358,12 @@ function HomePage() {
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
         >
-          <div className="max-w-6xl mx-auto px-4">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-16">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8"> {/* Added responsive padding */}
+            <h2 className="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-12 sm:mb-16"> {/* Adjusted margin-bottom */}
               Explore Our Comprehensive Features
             </h2>
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" // Increased gap
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10" // Adjusted gap
               variants={containerVariants}
               initial="hidden"
               whileInView="visible"
@@ -360,78 +371,78 @@ function HomePage() {
             >
               {/* Feature 1: Digital Patient Records */}
               <motion.div
-                className="bg-gray-50 rounded-xl shadow-lg p-7 text-center border-t-4 border-blue-600 hover:shadow-xl transition-shadow duration-300 group"
+                className="bg-gray-50 rounded-xl shadow-lg p-6 sm:p-7 text-center border-t-4 border-blue-600 hover:shadow-xl transition-shadow duration-300 group" // Adjusted padding
                 variants={cardVariants}
                 whileHover={{ y: -5 }} // Subtle lift on hover
               >
-                <img src={digitalPatientRecordsImage} alt="Digital Patient Records" className="w-full h-48 object-cover rounded-md mb-5 transition-transform duration-300 group-hover:scale-105" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Digital Patient Records</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <img src={digitalPatientRecordsImage} alt="Digital Patient Records" className="w-full h-40 sm:h-48 object-cover rounded-md mb-4 sm:mb-5 transition-transform duration-300 group-hover:scale-105" /> {/* Adjusted height and margin */}
+                <h3 className="text-xl sm:text-xl font-bold text-gray-900 mb-2">Digital Patient Records</h3>
+                <p className="text-base sm:text-base text-gray-700 leading-relaxed">
                   Securely store and manage comprehensive patient medical history, diagnoses, treatments, and prescriptions in one centralized, accessible system.
                 </p>
               </motion.div>
 
               {/* Feature 2: Appointment Scheduling */}
               <motion.div
-                className="bg-gray-50 rounded-xl shadow-lg p-7 text-center border-t-4 border-green-600 hover:shadow-xl transition-shadow duration-300 group"
+                className="bg-gray-50 rounded-xl shadow-lg p-6 sm:p-7 text-center border-t-4 border-green-600 hover:shadow-xl transition-shadow duration-300 group"
                 variants={cardVariants}
                 whileHover={{ y: -5 }}
               >
-                <img src={appointmentSchedulingImage} alt="Appointment Scheduling" className="w-full h-48 object-cover rounded-md mb-5 transition-transform duration-300 group-hover:scale-105" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Efficient Appointment Scheduling</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <img src={appointmentSchedulingImage} alt="Appointment Scheduling" className="w-full h-40 sm:h-48 object-cover rounded-md mb-4 sm:mb-5 transition-transform duration-300 group-hover:scale-105" />
+                <h3 className="text-xl sm:text-xl font-bold text-gray-900 mb-2">Efficient Appointment Scheduling</h3>
+                <p className="text-base sm:text-base text-gray-700 leading-relaxed">
                   Streamline appointment booking, rescheduling, and cancellations with an intuitive calendar and automated reminders for both staff and patients.
                 </p>
               </motion.div>
 
               {/* Feature 3: Billing and Invoicing */}
               <motion.div
-                className="bg-gray-50 rounded-xl shadow-lg p-7 text-center border-t-4 border-purple-600 hover:shadow-xl transition-shadow duration-300 group"
+                className="bg-gray-50 rounded-xl shadow-lg p-6 sm:p-7 text-center border-t-4 border-purple-600 hover:shadow-xl transition-shadow duration-300 group"
                 variants={cardVariants}
                 whileHover={{ y: -5 }}
               >
-                <img src={billingInvoicingImage} alt="Billing and Invoicing" className="w-full h-48 object-cover rounded-md mb-5 transition-transform duration-300 group-hover:scale-105" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Integrated Billing & Invoicing</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <img src={billingInvoicingImage} alt="Billing and Invoicing" className="w-full h-40 sm:h-48 object-cover rounded-md mb-4 sm:mb-5 transition-transform duration-300 group-hover:scale-105" />
+                <h3 className="text-xl sm:text-xl font-bold text-gray-900 mb-2">Integrated Billing & Invoicing</h3>
+                <p className="text-base sm:text-base text-gray-700 leading-relaxed">
                   Automate billing processes, generate accurate invoices, and manage payments with seamless integration for financial transparency.
                 </p>
               </motion.div>
 
               {/* Feature 4: Data Security */}
               <motion.div
-                className="bg-gray-50 rounded-xl shadow-lg p-7 text-center border-t-4 border-red-600 hover:shadow-xl transition-shadow duration-300 group"
+                className="bg-gray-50 rounded-xl shadow-lg p-6 sm:p-7 text-center border-t-4 border-red-600 hover:shadow-xl transition-shadow duration-300 group"
                 variants={cardVariants}
                 whileHover={{ y: -5 }}
               >
-                <img src={dataSecurityImage} alt="Data Security" className="w-full h-48 object-cover rounded-md mb-5 transition-transform duration-300 group-hover:scale-105" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Robust Data Security</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <img src={dataSecurityImage} alt="Data Security" className="w-full h-40 sm:h-48 object-cover rounded-md mb-4 sm:mb-5 transition-transform duration-300 group-hover:scale-105" />
+                <h3 className="text-xl sm:text-xl font-bold text-gray-900 mb-2">Robust Data Security</h3>
+                <p className="text-base sm:text-base text-gray-700 leading-relaxed">
                   Protect sensitive patient information with advanced encryption, strict access controls, and regular backups, ensuring HIPAA compliance.
                 </p>
               </motion.div>
 
               {/* Feature 5: Audit Trails */}
               <motion.div
-                className="bg-gray-50 rounded-xl shadow-lg p-7 text-center border-t-4 border-orange-600 hover:shadow-xl transition-shadow duration-300 group"
+                className="bg-gray-50 rounded-xl shadow-lg p-6 sm:p-7 text-center border-t-4 border-orange-600 hover:shadow-xl transition-shadow duration-300 group"
                 variants={cardVariants}
                 whileHover={{ y: -5 }}
               >
-                <img src={auditTrailsImage} alt="Audit Trails" className="w-full h-48 object-cover rounded-md mb-5 transition-transform duration-300 group-hover:scale-105" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Comprehensive Audit Trails</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <img src={auditTrailsImage} alt="Audit Trails" className="w-full h-40 sm:h-48 object-cover rounded-md mb-4 sm:mb-5 transition-transform duration-300 group-hover:scale-105" />
+                <h3 className="text-xl sm:text-xl font-bold text-gray-900 mb-2">Comprehensive Audit Trails</h3>
+                <p className="text-base sm:text-base text-gray-700 leading-relaxed">
                   Maintain detailed, immutable logs of all system activities, providing transparency and accountability for every action performed.
                 </p>
               </motion.div>
 
               {/* Feature 6: Reporting and Analytics */}
               <motion.div
-                className="bg-gray-50 rounded-xl shadow-lg p-7 text-center border-t-4 border-indigo-700 hover:shadow-xl transition-shadow duration-300 group"
+                className="bg-gray-50 rounded-xl shadow-lg p-6 sm:p-7 text-center border-t-4 border-indigo-700 hover:shadow-xl transition-shadow duration-300 group"
                 variants={cardVariants}
                 whileHover={{ y: -5 }}
               >
-                <img src={patientDataImage} alt="Reporting and Analytics" className="w-full h-48 object-cover rounded-md mb-5 transition-transform duration-300 group-hover:scale-105" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Advanced Reporting & Analytics</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <img src={patientDataImage} alt="Reporting and Analytics" className="w-full h-40 sm:h-48 object-cover rounded-md mb-4 sm:mb-5 transition-transform duration-300 group-hover:scale-105" />
+                <h3 className="text-xl sm:text-xl font-bold text-gray-900 mb-2">Advanced Reporting & Analytics</h3>
+                <p className="text-base sm:text-base text-gray-700 leading-relaxed">
                   Gain actionable insights into hospital performance, patient demographics, and financial trends with customizable reports and dashboards.
                 </p>
               </motion.div>
@@ -455,35 +466,35 @@ function HomePage() {
                     <circle cx="50" cy="10" r="10" opacity="0.4"></circle>
                 </svg>
             </div>
-          <div className="max-w-6xl mx-auto px-4 text-center relative z-10">
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-12 text-white">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10"> {/* Added responsive padding */}
+            <h2 className="text-3xl md:text-4xl font-extrabold mb-10 sm:mb-12 text-white"> {/* Adjusted margin-bottom */}
               What Our Valued Clients Say
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10"> {/* Increased gap */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10"> {/* Adjusted gap */}
               <motion.div
                 variants={cardVariants}
-                className="bg-white text-gray-800 p-8 rounded-xl shadow-lg border-l-4 border-teal-400 transform transition-all duration-300 hover:scale-[1.02]"
+                className="bg-white text-gray-800 p-6 sm:p-8 rounded-xl shadow-lg border-l-4 border-teal-400 transform transition-all duration-300 hover:scale-[1.02]" // Adjusted padding
               >
-                <p className="text-lg italic mb-6 relative">
-                    <span className="absolute -top-4 -left-4 text-6xl text-gray-300 opacity-75 font-serif">“</span>
+                <p className="text-base sm:text-lg italic mb-5 sm:mb-6 relative"> {/* Adjusted font size and margin */}
+                    <span className="absolute -top-3 -left-3 sm:-top-4 sm:-left-4 text-5xl sm:text-6xl text-gray-300 opacity-75 font-serif">“</span> {/* Adjusted size and position */}
                   AfyaLink HMS has truly revolutionized our clinic's operations. The efficiency gains are tremendous, and patient management has never been smoother. Highly recommended!
                 </p>
                 <div className="text-right">
-                    <p className="font-semibold text-blue-700">- Dr. Emily White</p>
-                    <p className="text-sm text-gray-600">Chief Medical Officer, City General Hospital</p>
+                    <p className="font-semibold text-blue-700 text-sm sm:text-base">- Dr. Emily White</p> {/* Adjusted font size */}
+                    <p className="text-xs sm:text-sm text-gray-600">Chief Medical Officer, City General Hospital</p> {/* Adjusted font size */}
                 </div>
               </motion.div>
               <motion.div
                 variants={cardVariants}
-                className="bg-white text-gray-800 p-8 rounded-xl shadow-lg border-l-4 border-orange-400 transform transition-all duration-300 hover:scale-[1.02]"
+                className="bg-white text-gray-800 p-6 sm:p-8 rounded-xl shadow-lg border-l-4 border-orange-400 transform transition-all duration-300 hover:scale-[1.02]"
               >
-                <p className="text-lg italic mb-6 relative">
-                    <span className="absolute -top-4 -left-4 text-6xl text-gray-300 opacity-75 font-serif">“</span>
+                <p className="text-base sm:text-lg italic mb-5 sm:mb-6 relative">
+                    <span className="absolute -top-3 -left-3 sm:-top-4 -sm:left-4 text-5xl sm:text-6xl text-gray-300 opacity-75 font-serif">“</span>
                   The robust security features of AfyaLink HMS give us peace of mind knowing our patient data is always protected. Their support team is also incredibly responsive and helpful.
                 </p>
                 <div className="text-right">
-                    <p className="font-semibold text-blue-700">- Mr. John Davis</p>
-                    <p className="text-sm text-gray-600">IT Director, Metro Healthcare Solutions</p>
+                    <p className="font-semibold text-blue-700 text-sm sm:text-base">- Mr. John Davis</p>
+                    <p className="text-xs sm:text-sm text-gray-600">IT Director, Metro Healthcare Solutions</p>
                 </div>
               </motion.div>
             </div>
@@ -499,60 +510,60 @@ function HomePage() {
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
         >
-          <div className="max-w-4xl mx-auto px-4">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-12">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8"> {/* Added responsive padding */}
+            <h2 className="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-10 sm:mb-12"> {/* Adjusted margin-bottom */}
               Get in Touch
             </h2>
-            <p className="text-lg text-gray-700 text-center mb-10 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg text-gray-700 text-center mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed px-2"> {/* Adjusted margin-bottom and added horizontal padding */}
               Have questions or want to request a demo? Fill out the form below, and our team will get back to you shortly.
             </p>
 
             <motion.form
-              className="bg-white p-8 rounded-xl shadow-lg border border-gray-200"
+              className="bg-white p-6 sm:p-8 rounded-xl shadow-lg border border-gray-200" // Adjusted padding
               variants={containerVariants}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.1 }}
             >
-              <motion.div variants={itemVariants} className="mb-6">
-                <label htmlFor="name" className="block text-gray-800 text-sm font-semibold mb-2">Your Name</label>
+              <motion.div variants={itemVariants} className="mb-4 sm:mb-6"> {/* Adjusted margin-bottom */}
+                <label htmlFor="name" className="block text-gray-800 text-sm font-semibold mb-1 sm:mb-2">Your Name</label> {/* Adjusted margin-bottom */}
                 <input
                   type="text"
                   id="name"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                  className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-base sm:text-base" // Adjusted padding and font size
                   placeholder="John Doe"
                 />
               </motion.div>
-              <motion.div variants={itemVariants} className="mb-6">
-                <label htmlFor="email" className="block text-gray-800 text-sm font-semibold mb-2">Your Email</label>
+              <motion.div variants={itemVariants} className="mb-4 sm:mb-6">
+                <label htmlFor="email" className="block text-gray-800 text-sm font-semibold mb-1 sm:mb-2">Your Email</label>
                 <input
                   type="email"
                   id="email"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                  className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-base sm:text-base"
                   placeholder="john.doe@example.com"
                 />
               </motion.div>
-              <motion.div variants={itemVariants} className="mb-6">
-                <label htmlFor="subject" className="block text-gray-800 text-sm font-semibold mb-2">Subject</label>
+              <motion.div variants={itemVariants} className="mb-4 sm:mb-6">
+                <label htmlFor="subject" className="block text-gray-800 text-sm font-semibold mb-1 sm:mb-2">Subject</label>
                 <input
                   type="text"
                   id="subject"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                  className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 text-base sm:text-base"
                   placeholder="Inquiry about AfyaLink HMS"
                 />
               </motion.div>
-              <motion.div variants={itemVariants} className="mb-8">
-                <label htmlFor="message" className="block text-gray-800 text-sm font-semibold mb-2">Your Message</label>
+              <motion.div variants={itemVariants} className="mb-6 sm:mb-8"> {/* Adjusted margin-bottom */}
+                <label htmlFor="message" className="block text-gray-800 text-sm font-semibold mb-1 sm:mb-2">Your Message</label>
                 <textarea
                   id="message"
                   rows="5"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                  className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 transition duration-200 ease-in-out"
                   placeholder="Type your message here..."
                 ></textarea>
               </motion.div>
               <motion.button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg shadow-md transform transition-all duration-300 hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-75"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 sm:py-3 rounded-lg shadow-md transform transition-all duration-300 hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-75" // Adjusted padding
                 variants={itemVariants}
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.98 }}
@@ -564,52 +575,52 @@ function HomePage() {
         </motion.section>
 
         {/* Footer */}
-        <footer className="bg-gray-800 py-12 footer-text-visible">
-          <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
+        <footer className="bg-gray-800 py-8 sm:py-12 footer-text-visible"> {/* Adjusted vertical padding */}
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 sm:gap-6 text-center md:text-left"> {/* Adjusted padding and gap, added text alignment for small screens */}
             {/* Company Info */}
-            <div>
-              <h3 className="text-2xl font-source-sans-pro-bold mb-4 footer-text-visible">AfyaLink HMS</h3>
+            <div className="col-span-full md:col-span-1"> {/* Take full width on small, then one column */}
+              <h3 className="text-xl sm:text-2xl font-source-sans-pro-bold mb-3 sm:mb-4 footer-text-visible">AfyaLink HMS</h3> {/* Adjusted font size and margin */}
               <p className="text-sm leading-relaxed footer-text-visible mb-4">
                 AfyaLink HMS is a comprehensive Hospital Management System designed to streamline healthcare operations.
               </p>
-              <div className="flex space-x-4">
+              <div className="flex justify-center md:justify-start space-x-4"> {/* Centered on small, left-aligned on medium+ */}
                 {/* Social Media Icons */}
                 <a href="#" className="text-gray-400 hover:text-white transition-colors duration-300" aria-label="Facebook">
-                  <svg fill="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="w-6 h-6" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path></svg>
+                  <svg fill="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path></svg>
                 </a>
                 <a href="#" className="text-gray-400 hover:text-white transition-colors duration-300" aria-label="Twitter">
-                  <svg fill="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="w-6 h-6" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path></svg>
+                  <svg fill="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path></svg>
                 </a>
                 <a href="#" className="text-gray-400 hover:text-white transition-colors duration-300" aria-label="LinkedIn">
-                  <svg fill="currentColor" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="0" className="w-6 h-6" viewBox="0 0 24 24" ><path stroke="none" d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"></path><circle cx="4" cy="4" r="2" stroke="none"></circle></svg>
+                  <svg fill="currentColor" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="0" className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" ><path stroke="none" d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"></path><circle cx="4" cy="4" r="2" stroke="none"></circle></svg>
                 </a>
               </div>
             </div>
             {/* Quick Links */}
             <div>
-              <h3 className="text-xl font-source-sans-pro-bold mb-4 footer-text-visible">Quick Links</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover">About Us</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover">Services</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover">Features</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover">Privacy Policy</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover">Terms of Service</a></li>
+              <h3 className="text-lg sm:text-xl font-source-sans-pro-bold mb-3 sm:mb-4 footer-text-visible">Quick Links</h3> {/* Adjusted font size and margin */}
+              <ul className="space-y-1.5 sm:space-y-2"> {/* Adjusted space-y */}
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover text-sm">About Us</a></li> {/* Adjusted font size */}
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover text-sm">Services</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover text-sm">Features</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover text-sm">Privacy Policy</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover text-sm">Terms of Service</a></li>
               </ul>
             </div>
             {/* Resources */}
             <div>
-              <h3 className="text-xl font-source-sans-pro-bold mb-4 footer-text-visible">Resources</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover">Blog</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover">Case Studies</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover">FAQs</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover">Support</a></li>
+              <h3 className="text-lg sm:text-xl font-source-sans-pro-bold mb-3 sm:mb-4 footer-text-visible">Resources</h3>
+              <ul className="space-y-1.5 sm:space-y-2">
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover text-sm">Blog</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover text-sm">Case Studies</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover text-sm">FAQs</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-300 footer-link-hover text-sm">Support</a></li>
               </ul>
             </div>
             {/* Contact Info (not the form) */}
             <div>
-              <h3 className="text-xl font-source-sans-pro-bold mb-4 footer-text-visible">Contact Info</h3>
-              <p className="text-sm leading-relaxed text-gray-400">
+              <h3 className="text-lg sm:text-xl font-source-sans-pro-bold mb-3 sm:mb-4 footer-text-visible">Contact Info</h3>
+              <p className="text-sm leading-relaxed text-gray-400">\
                 123 Healthcare Avenue, Suite 400<br />
                 MedCity, Healthland 90210<br />
                 Email: info@afyalinkhms.com<br />
@@ -617,7 +628,7 @@ function HomePage() {
               </p>
             </div>
           </div>
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
+          <div className="border-t border-gray-700 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center text-xs sm:text-sm text-gray-400"> {/* Adjusted padding and font size */}
             &copy; {new Date().getFullYear()} AfyaLink HMS. All rights reserved.
           </div>
         </footer>
