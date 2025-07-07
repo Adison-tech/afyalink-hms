@@ -17,7 +17,8 @@ const patientRoutes = require('./src/routes/patientRoutes');
 const appointmentRoutes = require('./src/routes/appointmentRoutes');
 const clinicalNoteRoutes = require('./src/routes/clinicalNoteRoutes');
 const userRoutes = require('./src/routes/userRoutes');
-
+const departmentRoutes = require('./src/routes/departmentRoutes');
+const adminRoutes = require('./src/routes/adminRoutes');
 // Middleware to parse JSON request bodies
 app.use(express.json());
 
@@ -32,6 +33,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/clinical-notes', clinicalNoteRoutes);
+app.use('/api/departments', departmentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ⭐ NEW: Generic 404 Not Found Handler (MUST be after all other routes) ⭐
 app.use((req, res, next) => {
