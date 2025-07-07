@@ -1,31 +1,42 @@
 // frontend/src/pages/DashboardPage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // <--- ADD useCallback HERE
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
+import { Bar, Pie } from 'react-chartjs-2';
+
+// Register Chart.js components
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
+
 
 function DashboardPage() {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, token } = useAuth();
   const navigate = useNavigate();
-
-  // --- IMPORTANT: CONSOLE LOGS FOR DEBUGGING ---
-  console.log('--- DashboardPage Render Cycle ---');
-  console.log('authLoading:', authLoading);
-  console.log('isAuthenticated:', isAuthenticated);
-  console.log('User object:', user);
-  console.log('---------------------------------');
-  // --- END CONSOLE LOGS ---
 
   const [stats, setStats] = useState({
     totalPatients: 0,
     totalDoctors: 0,
-    upcomingAppointments: 0,
-    recentNotes: 0,
+    todaysAppointments: 0,
+    revenueSummary: 0,
+    // Add more stats as needed
   });
 
   const [recentActivities, setRecentActivities] = useState([]);
-  const [todaysAppointments, setTodaysAppointments] = useState([]); // New state for today's appointments
+  const [todaysAppointmentsList, setTodaysAppointmentsList] = useState([]); // Renamed to avoid conflict with stats.todaysAppointments
+  const [chartData, setChartData] = useState({
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    datasets: [
+      {
+        label: 'Monthly Appointments',
+        data: [65, 59, 80, 81, 56, 55, 40, 60, 70, 75, 85, 90], // Dummy data
+        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1,
+      },
+    ],
+  });
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -34,56 +45,81 @@ function DashboardPage() {
     day: 'numeric',
   });
 
+  // Fetch admin stats
+  const fetchAdminStats = async () => {
+    if (!token) return;
+    try {
+      const response = await fetch('/api/admin/stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setStats(data);
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+      // Optionally set an error state to display to the user
+    }
+  };
+
+  // Fetch today's appointments for the list
+  const fetchTodaysAppointments = useCallback(async () => {
+    if (!token) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const response = await fetch(`/api/appointments?date=${today}&status=Scheduled`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setTodaysAppointmentsList(data);
+    } catch (error) {
+      console.error('Error fetching today\'s appointments:', error);
+    }
+  }, [token]);
+
+
   useEffect(() => {
     if (authLoading || !user) {
-      // If authLoading is true or user is null, we return early from useEffect.
-      // The loading spinner will be shown by the component's main render logic.
       return;
     }
 
+    // Fetch admin stats if user is admin
+    if (user.role === 'admin') {
+      fetchAdminStats();
+    }
+
+    // Fetch today's appointments for all authorized roles
+    fetchTodaysAppointments();
+
     // Simulate fetching dashboard stats and recent activities
-    const mockFetch = setTimeout(() => {
-      setStats({
-        totalPatients: 1250,
-        totalDoctors: 45,
-        upcomingAppointments: 120, // This could be total upcoming, today's appointments is more specific
-        recentNotes: 85,
-      });
-      setRecentActivities([
-        { id: 1, type: 'Appointment', description: 'Dr. Smith had an appointment with John Doe.', date: '2025-06-21 10:00 AM' },
-        { id: 2, type: 'Patient Update', description: 'Patient Jane Doe\'s record updated.', date: '2025-06-20 03:30 PM' },
-        { id: 3, type: 'Note Added', description: 'New clinical note added for patient Mike Ross.', date: '2025-06-20 11:15 AM' },
-        { id: 4, type: 'Appointment', description: 'Confirmed appointment for Emily White.', date: '2025-06-19 09:00 AM' },
-        { id: 5, type: 'Patient Update', description: 'New patient registered: Alex Green.', date: '2025-06-18 02:00 PM' },
-      ]);
-      setTodaysAppointments([ // Mock data for today's appointments
-        { id: 'app1', time: '09:00 AM', patient: 'Alice Johnson', doctor: 'Dr. Emily White' },
-        { id: 'app2', time: '10:30 AM', patient: 'Bob Williams', doctor: 'Dr. John Smith' },
-        { id: 'app3', time: '02:00 PM', patient: 'Charlie Brown', doctor: 'Dr. Sarah Davis' },
-      ]);
-    }, 1000); // Simulate network delay
+    const mockActivities = [
+      { id: 1, type: 'Patient Registered', description: 'New patient John Doe registered.', date: '2023-10-26' },
+      { id: 2, type: 'Appointment Scheduled', description: 'Appointment for Jane Smith with Dr. Alex.', date: '2023-10-25' },
+      { id: 3, type: 'Clinical Note Added', description: 'Clinical note added for patient Mark Johnson.', date: '2023-10-24' },
+      { id: 4, type: 'User Login', description: 'Dr. Emily logged in to the system.', date: '2023-10-24' },
+    ];
+    setRecentActivities(mockActivities);
 
-    return () => clearTimeout(mockFetch);
-  }, [authLoading, user]);
-
-  // Derived permissions from user roles (assuming user.role is available and maps to permissions)
-  // This logic is simplified; in a real app, permissions might come from the user object itself.
-  const userRole = user?.role || 'guest'; // Default to 'guest' if no user or role
-  const canViewPatients = ['admin', 'doctor', 'nurse', 'receptionist'].includes(userRole);
-  const canViewAppointments = ['admin', 'doctor', 'nurse', 'receptionist'].includes(userRole);
-  const canViewClinicalNotes = ['admin', 'doctor', 'nurse'].includes(userRole);
-  const canManageUsers = ['admin'].includes(userRole);
-  const canAddPatient = ['admin', 'receptionist'].includes(userRole);
-  const canScheduleAppointment = ['admin', 'receptionist', 'nurse'].includes(userRole);
-  const canCreateNote = ['admin', 'doctor', 'nurse'].includes(userRole);
+  }, [authLoading, user, fetchTodaysAppointments]);
 
 
-  // Framer Motion Variants
-  const containerVariants = {
+  const cardVariants = {
     hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      y: 0,
       transition: {
         staggerChildren: 0.1,
       },
@@ -95,367 +131,226 @@ function DashboardPage() {
     visible: { y: 0, opacity: 1 },
   };
 
-  const cardVariants = {
-    hidden: { scale: 0.9, opacity: 0 },
-    visible: { scale: 1, opacity: 1, transition: { type: 'spring', stiffness: 100, damping: 10 } },
-    hover: { scale: 1.03, boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.15)', transition: { duration: 0.2 } },
-    tap: { scale: 0.97, transition: { duration: 0.1 } }
-  };
-
-  const buttonVariants = {
-    hover: { scale: 1.05, boxShadow: '0px 8px 15px rgba(0, 0, 0, 0.1)' },
-    tap: { scale: 0.95 }
-  };
-
-  // Function to get activity type badge styles
   const getActivityBadgeClasses = (type) => {
     switch (type) {
-      case 'Appointment':
-        return 'bg-blue-100 text-blue-800';
-      case 'Patient Update':
-        return 'bg-green-100 text-green-800';
-      case 'Note Added':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 'Patient Registered': return 'bg-blue-200 text-blue-800';
+      case 'Appointment Scheduled': return 'bg-green-200 text-green-800';
+      case 'Clinical Note Added': return 'bg-purple-200 text-purple-800';
+      case 'User Login': return 'bg-yellow-200 text-yellow-800';
+      default: return 'bg-gray-200 text-gray-800';
     }
   };
 
   if (authLoading) {
     return (
-      <div className='flex justify-center items-center h-screen bg-gradient-to-br from-blue-100 to-indigo-200'>
-        <div className='flex flex-col items-center'>
-          <svg className="animate-spin h-10 w-10 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <p className='text-lg text-gray-700'>Loading dashboard...</p>
-        </div>
+      <div className='flex justify-center items-center h-screen bg-gray-100'>
+        <div className='text-xl text-gray-700'>Loading dashboard...</div>
       </div>
     );
   }
 
   if (!isAuthenticated || !user) {
-    // This case should ideally be handled by PrivateRoute, but good for redundancy
     navigate('/login');
     return null;
   }
 
+  const isDoctor = user.role === 'doctor';
+  const isAdmin = user.role === 'admin';
+  const isReceptionist = user.role === 'receptionist';
+  const isNurse = user.role === 'nurse';
+
+
   return (
     <motion.div
-      className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-200 p-8 md:p-12 lg:p-16"
+      className='min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8'
+      initial='hidden'
+      animate='visible'
       variants={containerVariants}
-      initial="hidden"
-      animate="visible"
     >
-      {/* Dashboard Header */}
-      <motion.div variants={itemVariants} className="mb-10 text-center md:text-left">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-2">
-          Hello, <span className="text-blue-700">{user.username}</span>! 👋
-        </h1>
-        <p className="text-lg text-gray-600 font-medium">
-          Welcome to your AfyaLink HMS Dashboard. Today is {currentDate}.
-          <span className="ml-3 px-4 py-1 bg-blue-200 text-blue-800 text-sm font-semibold rounded-full capitalize shadow-md">
-            {user.role} Access
-          </span>
-        </p>
-      </motion.div>
-
-      {/* Key Statistics Section */}
-      <motion.section
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
-        variants={containerVariants}
+      <motion.h1
+        className='text-3xl sm:text-4xl font-extrabold text-gray-900 mb-6 sm:mb-8 text-center'
+        variants={itemVariants}
       >
-        <motion.div
-          className="bg-white rounded-lg shadow-xl p-6 flex flex-col items-center text-center transition-all duration-300 transform hover:-translate-y-1"
-          variants={cardVariants}
-          whileHover="hover"
-          whileTap="tap"
-        >
-          <div className="text-blue-500 mb-3">
-            <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M12 20.354a4 4 0 110-5.292M12 14c-1.488 0-2.922.09-4.333.268M12 14c1.488 0 2.922.09 4.333.268M12 14l-.001-.001M12 14L12 6m-5.333 14c-1.293-1.077-2.67-2.128-4.008-3.056M12 14l.001-.001M12 14L12 6m-5.333 14c-1.293-1.077-2.67-2.128-4.008-3.056M12 14l.001-.001M12 14L12 6m-5.333 14c-1.293-1.077-2.67-2.128-4.008-3.056"></path>
-            </svg>
-          </div>
-          <p className="text-4xl font-bold text-gray-900 mb-2">{stats.totalPatients}</p>
-          <p className="text-lg text-gray-600">Total Patients</p>
-        </motion.div>
+        Welcome, {user.first_name || user.username}!
+      </motion.h1>
 
-        <motion.div
-          className="bg-white rounded-lg shadow-xl p-6 flex flex-col items-center text-center transition-all duration-300 transform hover:-translate-y-1"
-          variants={cardVariants}
-          whileHover="hover"
-          whileTap="tap"
-        >
-          <div className="text-green-500 mb-3">
-            <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
-            </svg>
-          </div>
-          <p className="text-4xl font-bold text-gray-900 mb-2">{stats.totalDoctors}</p>
-          <p className="text-lg text-gray-600">Total Doctors</p>
-        </motion.div>
-
-        <motion.div
-          className="bg-white rounded-lg shadow-xl p-6 flex flex-col items-center text-center transition-all duration-300 transform hover:-translate-y-1"
-          variants={cardVariants}
-          whileHover="hover"
-          whileTap="tap"
-        >
-          <div className="text-purple-500 mb-3">
-            <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h.01M7 11h.01M7 15h.01M11 15h.01M15 15h.01M17 11h.01M17 15h.01M10 18H5a2 2 0 01-2-2V8a2 2 0 012-2h14a2 2 0 012 2v7a2 2 0 01-2 2h-5a2 2 0 01-2 2z"></path>
-            </svg>
-          </div>
-          <p className="text-4xl font-bold text-gray-900 mb-2">{stats.upcomingAppointments}</p>
-          <p className="text-lg text-gray-600">Upcoming Appointments</p>
-        </motion.div>
-
-        <motion.div
-          className="bg-white rounded-lg shadow-xl p-6 flex flex-col items-center text-center transition-all duration-300 transform hover:-translate-y-1"
-          variants={cardVariants}
-          whileHover="hover"
-          whileTap="tap"
-        >
-          <div className="text-red-500 mb-3">
-            <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-            </svg>
-          </div>
-          <p className="text-4xl font-bold text-gray-900 mb-2">{stats.recentNotes}</p>
-          <p className="text-lg text-gray-600">Recent Notes</p>
-        </motion.div>
-      </motion.section>
-
-      {/* Quick Access/Feature Cards Section */}
-      <motion.section
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
-        variants={containerVariants}
+      <motion.p
+        className='text-lg text-gray-600 mb-8 sm:mb-10 text-center'
+        variants={itemVariants}
       >
-        {canViewPatients && (
-          <motion.div
-            className="bg-white rounded-lg shadow-xl p-6 flex flex-col items-center text-center transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:ring-2 hover:ring-blue-500 hover:ring-offset-2 cursor-pointer"
-            variants={cardVariants}
-            whileHover="hover"
-            whileTap="tap"
-            onClick={() => navigate('/patients')}
-          >
-            <div className="text-blue-600 mb-4">
-              <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M12 20.354a4 4 0 110-5.292M12 14c-1.488 0-2.922.09-4.333.268M12 14c1.488 0 2.922.09 4.333.268M12 14l-.001-.001M12 14L12 6m-5.333 14c-1.293-1.077-2.67-2.128-4.008-3.056M12 14l.001-.001M12 14L12 6m-5.333 14c-1.293-1.077-2.67-2.128-4.008-3.056M12 14l.001-.001M12 14L12 6m-5.333 14c-1.293-1.077-2.67-2.128-4.008-3.056"></path>
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Patient Management</h3>
-            <p className="text-gray-600 text-sm">View, add, and manage patient records.</p>
-          </motion.div>
-        )}
+        Today is {currentDate}.
+      </motion.p>
 
-        {canViewAppointments && (
-          <motion.div
-            className="bg-white rounded-lg shadow-xl p-6 flex flex-col items-center text-center transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:ring-2 hover:ring-blue-500 hover:ring-offset-2 cursor-pointer"
-            variants={cardVariants}
-            whileHover="hover"
-            whileTap="tap"
-            onClick={() => navigate('/appointments')}
-          >
-            <div className="text-green-600 mb-4">
-              <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h.01M7 11h.01M7 15h.01M11 15h.01M15 15h.01M17 11h.01M17 15h.01M10 18H5a2 2 0 01-2-2V8a2 2 0 012-2h14a2 2 0 012 2v7a2 2 0 01-2 2h-5a2 2 0 01-2 2z"></path>
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Appointments</h3>
-            <p className="text-gray-600 text-sm">Schedule and manage patient appointments.</p>
-          </motion.div>
-        )}
-
-        {canViewClinicalNotes && (
-          <motion.div
-            className="bg-white rounded-lg shadow-xl p-6 flex flex-col items-center text-center transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:ring-2 hover:ring-blue-500 hover:ring-offset-2 cursor-pointer"
-            variants={cardVariants}
-            whileHover="hover"
-            whileTap="tap"
-            onClick={() => navigate('/clinical-notes')}
-          >
-            <div className="text-red-600 mb-4">
-              <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Clinical Notes</h3>
-            <p className="text-gray-600 text-sm">Access and manage patient clinical notes.</p>
-          </motion.div>
-        )}
-
-        {canManageUsers && (
-          <motion.div
-            className="bg-white rounded-lg shadow-xl p-6 flex flex-col items-center text-center transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:ring-2 hover:ring-blue-500 hover:ring-offset-2 cursor-pointer"
-            variants={cardVariants}
-            whileHover="hover"
-            whileTap="tap"
-            onClick={() => navigate('/user-management')}
-          >
-            <div className="text-yellow-600 mb-4">
-              <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h-2v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2H3a2 2 0 00-2 2v3a1 1 0 001 1h18a1 1 0 001-1v-3a2 2 0 00-2-2zM10 9a2 2 0 100-4 2 2 0 000 4zm7.5 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"></path>
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-800 mb-2">User Management</h3>
-            <p className="text-gray-600 text-sm">Add, edit, and manage system users.</p>
-          </motion.div>
-        )}
-      </motion.section>
-
-      {/* New: Quick Actions Section */}
-      <motion.section
-        className="bg-white rounded-lg shadow-xl p-6 mb-12"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        <h3 className="text-2xl font-bold text-gray-800 mb-5 border-b pb-3">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {canAddPatient && (
-            <motion.button
-              className="w-full flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300"
-              variants={buttonVariants}
-              whileHover="hover"
-              whileTap="tap"
-              onClick={() => navigate('/patients/new')} // Assuming a route for new patient form
-            >
-              <svg className="h-6 w-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              Add New Patient
-            </motion.button>
-          )}
-
-          {canScheduleAppointment && (
-            <motion.button
-              className="w-full flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300"
-              variants={buttonVariants}
-              whileHover="hover"
-              whileTap="tap"
-              onClick={() => navigate('/appointments/new')} // Assuming a route for new appointment form
-            >
-              <svg className="h-6 w-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h.01M7 11h.01M7 15h.01M11 15h.01M15 15h.01M17 11h.01M17 15h.01M10 18H5a2 2 0 01-2-2V8a2 2 0 012-2h14a2 2 0 012 2v7a2 2 0 01-2 2h-5a2 2 0 01-2 2z"></path>
-              </svg>
-              Schedule Appointment
-            </motion.button>
-          )}
-
-          {canCreateNote && (
-            <motion.button
-              className="w-full flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300"
-              variants={buttonVariants}
-              whileHover="hover"
-              whileTap="tap"
-              onClick={() => navigate('/clinical-notes/new')} // Assuming a route for new clinical note
-            >
-              <svg className="h-6 w-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-              </svg>
-              Create Clinical Note
-            </motion.button>
-          )}
-        </div>
-      </motion.section>
-
-      {/* New: Today's Appointments Section */}
-      {user && canViewAppointments && (
+      {/* Admin Specific Stats */}
+      {isAdmin && (
         <motion.section
-          className="bg-white rounded-lg shadow-xl p-6 mb-12"
+          className='mb-8 sm:mb-10 bg-white p-6 rounded-xl shadow-lg'
           variants={containerVariants}
-          initial="hidden"
-          animate="visible"
         >
-          <h3 className="text-2xl font-bold text-gray-800 mb-5 border-b pb-3">Today's Appointments</h3>
-          <ul className="divide-y divide-gray-200">
-            {todaysAppointments.length > 0 ? (
-              todaysAppointments.map(appointment => (
+          <motion.h2 className='text-2xl font-bold text-gray-800 mb-5' variants={itemVariants}>
+            Admin Overview
+          </motion.h2>
+          <motion.div
+            className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'
+            variants={containerVariants}
+          >
+            <motion.div
+              className='bg-blue-500 text-white p-5 rounded-lg shadow-md flex flex-col items-center justify-center transform hover:scale-105 transition-transform duration-300'
+              variants={cardVariants}
+            >
+              <h3 className='text-lg font-semibold mb-2'>Total Patients</h3>
+              <p className='text-4xl font-bold'>{stats.totalPatients}</p>
+            </motion.div>
+            <motion.div
+              className='bg-purple-500 text-white p-5 rounded-lg shadow-md flex flex-col items-center justify-center transform hover:scale-105 transition-transform duration-300'
+              variants={cardVariants}
+            >
+              <h3 className='text-lg font-semibold mb-2'>Total Doctors</h3>
+              <p className='text-4xl font-bold'>{stats.totalDoctors}</p>
+            </motion.div>
+            <motion.div
+              className='bg-yellow-500 text-white p-5 rounded-lg shadow-md flex flex-col items-center justify-center transform hover:scale-105 transition-transform duration-300'
+              variants={cardVariants}
+            >
+              <h3 className='text-lg font-semibold mb-2'>Today's Appointments</h3>
+              <p className='text-4xl font-bold'>{stats.todaysAppointments}</p>
+            </motion.div>
+            <motion.div
+              className='bg-green-500 text-white p-5 rounded-lg shadow-md flex flex-col items-center justify-center transform hover:scale-105 transition-transform duration-300'
+              variants={cardVariants}
+            >
+              <h3 className='text-lg font-semibold mb-2'>Revenue Summary</h3>
+              <p className='text-4xl font-bold'>${stats.revenueSummary.toLocaleString()}</p>
+            </motion.div>
+          </motion.div>
+
+          {/* Chart Section */}
+          <motion.div className='mt-8 bg-gray-50 p-6 rounded-lg shadow-inner' variants={itemVariants}>
+            <h3 className='text-xl font-bold text-gray-700 mb-4'>Monthly Appointments Trend</h3>
+            <div className='h-80'> {/* Fixed height for chart container */}
+              <Bar
+                data={chartData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false, // Allows chart to fill container height
+                  plugins: {
+                    legend: {
+                      position: 'top',
+                    },
+                    title: {
+                      display: true,
+                      text: 'Monthly Appointments',
+                    },
+                  },
+                }}
+              />
+            </div>
+          </motion.div>
+        </motion.section>
+      )}
+
+
+      {/* General Dashboard Sections */}
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+        {/* Today's Appointments */}
+        <motion.section
+          className='bg-white p-6 rounded-xl shadow-lg'
+          variants={containerVariants}
+        >
+          <motion.h2 className='text-2xl font-bold text-gray-800 mb-5' variants={itemVariants}>
+            Today's Appointments
+          </motion.h2>
+          <ul className='space-y-4'>
+            {todaysAppointmentsList.length > 0 ? (
+              todaysAppointmentsList.map((appointment) => (
                 <motion.li
                   key={appointment.id}
-                  className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between transition-colors duration-200"
+                  className='flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200'
                   variants={itemVariants}
-                  whileHover={{ backgroundColor: '#f9fafb' }}
                 >
-                  <div className="flex-1 mr-4 mb-2 sm:mb-0">
-                    <p className="text-gray-800 font-medium text-base leading-snug">
-                      <span className="font-semibold text-blue-700">{appointment.time}</span> - {appointment.patient} with {appointment.doctor}
+                  <div>
+                    <p className='text-gray-800 font-medium text-base leading-snug'>
+                      <Link to={`/patients/${appointment.patient_id}`} className='text-blue-600 hover:underline'>
+                        {appointment.patient_first_name} {appointment.patient_last_name}
+                      </Link>
+                      {' '}with Dr.{' '}
+                      <Link to={`/users/${appointment.doctor_id}`} className='text-blue-600 hover:underline'>
+                        {appointment.doctor_first_name} {appointment.doctor_last_name}
+                      </Link>
+                    </p>
+                    <p className='text-sm text-gray-500 mt-1'>
+                      {new Date(appointment.appointment_date).toLocaleDateString()} at {appointment.appointment_time} - {appointment.reason}
                     </p>
                   </div>
-                  <div className="text-gray-400">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                  <div className='text-gray-400'>
+                    <svg className='h-5 w-5' fill='none' stroke='currentColor' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M9 5l7 7-7 7'></path>
                     </svg>
                   </div>
                 </motion.li>
               ))
             ) : (
-              <motion.li variants={itemVariants} className="py-4 text-gray-500 text-center">
+              <motion.li variants={itemVariants} className='py-4 text-gray-500 text-center'>
                 No appointments scheduled for today.
               </motion.li>
             )}
           </ul>
-          {todaysAppointments.length > 0 && (
-            <motion.div variants={itemVariants} className="mt-5 text-right">
-              <Link to="/appointments" className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors duration-200">
+          {todaysAppointmentsList.length > 0 && (
+            <motion.div variants={itemVariants} className='mt-5 text-right'>
+              <Link to='/appointments' className='text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors duration-200'>
                 View All Appointments &rarr;
               </Link>
             </motion.div>
           )}
         </motion.section>
-      )}
 
-      {/* Recent Activities Section - Moved to bottom for hierarchy */}
-      {user && (canViewPatients || canViewAppointments || canViewClinicalNotes || canManageUsers) && (
+        {/* Recent Activities */}
         <motion.section
-          className="bg-white rounded-lg shadow-xl p-6"
+          className='bg-white p-6 rounded-xl shadow-lg'
           variants={containerVariants}
-          initial="hidden"
-          animate="visible"
         >
-          <h3 className="text-2xl font-bold text-gray-800 mb-5 border-b pb-3">Recent Activities</h3>
-          <ul className="divide-y divide-gray-200">
+          <motion.h2 className='text-2xl font-bold text-gray-800 mb-5' variants={itemVariants}>
+            Recent Activities
+          </motion.h2>
+          <ul className='space-y-4'>
             {recentActivities.length > 0 ? (
-              recentActivities.map(activity => (
+              recentActivities.map((activity) => (
                 <motion.li
                   key={activity.id}
-                  className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between transition-colors duration-200"
+                  className='flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200'
                   variants={itemVariants}
-                  whileHover={{ backgroundColor: '#f9fafb' }}
                 >
-                  <div className="flex-1 mr-4 mb-2 sm:mb-0">
-                    <p className="text-gray-800 font-medium text-base leading-snug">{activity.description}</p>
-                    <p className="text-sm text-gray-500 mt-1">
+                  <div>
+                    <p className='text-gray-800 font-medium text-base leading-snug'>{activity.description}</p>
+                    <p className='text-sm text-gray-500 mt-1'>
                       <span className={`px-2 py-0.5 rounded-full text-xs font-semibold mr-2 ${getActivityBadgeClasses(activity.type)}`}>
                         {activity.type}
                       </span>
                       {activity.date}
                     </p>
                   </div>
-                  <div className="text-gray-400">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                  <div className='text-gray-400'>
+                    <svg className='h-5 w-5' fill='none' stroke='currentColor' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M9 5l7 7-7 7'></path>
                     </svg>
                   </div>
                 </motion.li>
               ))
             ) : (
-              <motion.li variants={itemVariants} className="py-4 text-gray-500 text-center">
+              <motion.li variants={itemVariants} className='py-4 text-gray-500 text-center'>
                 No recent activities to display.
               </motion.li>
             )}
           </ul>
           {recentActivities.length > 0 && (
-            <motion.div variants={itemVariants} className="mt-5 text-right">
-              <Link to="/activities" className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors duration-200">
+            <motion.div variants={itemVariants} className='mt-5 text-right'>
+              <Link to='/activities' className='text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors duration-200'>
                 View All Activities &rarr;
               </Link>
             </motion.div>
           )}
         </motion.section>
-      )}
+      </div>
     </motion.div>
   );
 }
